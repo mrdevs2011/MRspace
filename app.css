@@ -518,7 +518,7 @@
   right: 0;
   min-width: 220px;
   padding: 4px;
-  background: var(--pal-gray-900);
+  background: #000;
   border: 1px solid var(--line2);
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0,0.45);
@@ -536,8 +536,8 @@
   border-radius: 8px;
   font-size: 13px;
   font-family: var(--font);
-  font-weight: 500;
-  color: var(--red);
+  font-weight: 700;
+  color: darkred;
   cursor: pointer;
   
 }
@@ -8203,3 +8203,13 @@ textarea:not(:focus) {
   .saved-back { display: none; }
   .saved-head { padding: 16px 16px 12px; }
 }
+
+/* ── Post action tugmalari: chap (like, comment, send) / o'ng (link, save) — hammasi oppoq ── */
+.post-actions .post-actions-left,
+.post-actions .post-actions-right { display: flex; align-items: center; gap: 2px; }
+.post-actions .act-btn,
+.post-actions .act-btn:hover,
+.post-actions .act-btn.liked,
+.post-actions .act-btn.saved { color: #fff !important; }
+.post-actions .act-btn svg { stroke: #fff !important; }
+.post-actions .act-btn.link-btn svg { stroke: none !important; }
