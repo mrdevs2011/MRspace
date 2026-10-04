@@ -14,8 +14,11 @@
  *   /newpost               yangi post oynasi
  *   /actions               admin boshqaruvi (faqat admin)
  *
- * Qoida: URL ga huquq yo'q bo'lsa (kirmagan, admin emas, chat/guruh topilmadi) — "/" ga
- * qaytariladi, "/" esa kirgan bo'lsa /home, kirmagan bo'lsa /login ga o'tadi.
+ * Qoidalar:
+ *  - Kirmagan foydalanuvchi har qanday manzilda DARHOL /login ga qaytariladi (index.html dagi
+ *    inline skript sahifa yuklanmasdan oldin ham shuni qiladi); asl manzil kirgandan keyin ochiladi.
+ *  - Kirgan foydalanuvchi uchun mavjud bo'lmagan manzil / user / guruh -> 404 sahifa.
+ *  - Kirgan foydalanuvchi /login ni yozsa — oxirgi turgan joyiga (spacemr_last_path) qaytadi.
  *
  * Ikki tomonlama:
  *  - holat -> URL: ochiq overlay/chat/tab kuzatiladi, URL shunga moslanadi
@@ -29,9 +32,11 @@ const $ = id => document.getElementById(id);
 
 const VIEW_PATH = { home: '/home', chats: '/chats', profile: '/profile', actions: '/actions' };
 const NEXT_KEY = 'spacemr_next_path';
+const LAST_KEY = 'spacemr_last_path'; // kirgan foydalanuvchining oxirgi joyi (/login yozsa shu yerga qaytadi)
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 let _auth = 'unknown';        // 'unknown' | 'in' | 'out'
+let _fromLogin = false;       // hozirgina login qilindi (login ekranidan keldi)
 let _suppressUntil = 0;       // shu vaqtgacha holat->URL sinxronlash to'xtatiladi
 let _internalPop = false;     // history.back() ni o'zimiz chaqirganda popstate ni o'tkazib yuborish
 let _replaceNext = false;     // keyingi sinxronlashda push emas, replace
@@ -50,13 +55,14 @@ function cleanPath(p) {
   return s || '/';
 }
 
-/** Yo'lni tahlil qiladi. Tanilmagan yo'l -> {kind:'root'} */
+/** Yo'lni tahlil qiladi. Tanilmagan yo'l -> {kind:'notfound'} (kirgan userga 404 sahifa ko'rsatiladi) */
 export function parsePath(rawPath) {
   const path = cleanPath(rawPath);
   const seg = path.split('/').filter(Boolean).map(s => { try { return decodeURIComponent(s); } catch (_) { return s; } });
   const a = (seg[0] || '').toLowerCase();
   const b = (seg[1] || '').toLowerCase();
   if (!seg.length) return { kind: 'root' };
+  if (seg.length === 1 && (a === 'index.html' || a === 'index')) return { kind: 'root' };
   if (seg.length === 1) {
     if (a === 'login')    return { kind: 'login' };
     if (a === 'home')     return { kind: 'view', view: 'home' };
@@ -79,7 +85,7 @@ export function parsePath(rawPath) {
   if (a === 'chats' && seg.length === 3 && b === 'g' && seg[2]) {
     return { kind: 'thread', thread: 'group', ref: seg[2], base: 'chats' };
   }
-  return { kind: 'root' };
+  return { kind: 'notfound' };
 }
 
 function isAdminUser() { return !!(state.me && state.me.isAdmin); }
@@ -105,24 +111,35 @@ async function ensureGroupMember(gid) {
 
 function settingsPinned() { return document.body.classList.contains('desktop-settings-pinned'); }
 
+// true = so'nggi qidiruv tarmoq/server xatosi bilan tugadi (bu "topilmadi" EMAS — 404 ko'rsatilmaydi)
+let _lookupFailed = false;
+
 async function uidByUsername(username) {
+  _lookupFailed = false;
   try {
-    const { data } = await sb.from('profiles').select('id, username').ilike('username', username).maybeSingle();
+    const { data, error } = await sb.from('profiles').select('id, username').ilike('username', username).maybeSingle();
+    if (error) { _lookupFailed = true; return null; }
     if (data?.id) { _unameCache.set(data.id, data.username); return data.id; }
-  } catch (_) { /* tarmoq xatosi — topilmadi deb hisoblanadi */ }
+  } catch (_) { _lookupFailed = true; }
   return null;
 }
 
 async function groupIdByRef(ref) {
+  _lookupFailed = false;
   try {
     if (UUID_RE.test(ref)) {
-      const { data } = await sb.from('groups').select('id').eq('id', ref).maybeSingle();
+      const { data, error } = await sb.from('groups').select('id').eq('id', ref).maybeSingle();
+      if (error) { _lookupFailed = true; return null; }
       return data?.id || null;
     }
-    const { data } = await sb.from('groups').select('id').ilike('group_username', ref).maybeSingle();
+    const { data, error } = await sb.from('groups').select('id').ilike('group_username', ref).maybeSingle();
+    if (error) { _lookupFailed = true; return null; }
     return data?.id || null;
-  } catch (_) { return null; }
+  } catch (_) { _lookupFailed = true; return null; }
 }
+
+/** Qidiruv natijasi bo'sh: haqiqatan yo'q -> 404; tarmoq xatosi -> bosh sahifa (avvalgidek). */
+function missing() { return _lookupFailed ? deny() : notFound(); }
 
 /** DM URL uchun username. Hali noma'lum bo'lsa null qaytaradi va fonda yuklaydi. */
 function dmToken(uid) {
@@ -205,6 +222,9 @@ function sync() {
   _replaceNext = false;
   setUrl(target, { replace });
   updateTitle(target);
+  if (_auth === 'in' && target !== '/login') {
+    try { localStorage.setItem(LAST_KEY, target); } catch (_) {}
+  }
 }
 
 const TITLES = {
@@ -241,6 +261,11 @@ async function closeThreadIfOpen() {
   } catch (_) {
     $('chatThreadModal')?.classList.remove('show');
   }
+}
+
+/** Mavjud bo'lmagan manzil: soddalashtirilgan 404 sahifaga o'tamiz (tarixga yozilmaydi). */
+function notFound() {
+  try { location.replace('/404.html'); } catch (_) { location.href = '/404.html'; }
 }
 
 function deny() {
@@ -283,7 +308,7 @@ export async function applyPath(rawPath, { initial = false } = {}) {
 
     /* Kirmagan foydalanuvchi: faqat /login */
     if (_auth !== 'in') {
-      if (route.kind !== 'login' && route.kind !== 'root') {
+      if (route.kind !== 'login' && route.kind !== 'root' && route.kind !== 'notfound') {
         try { sessionStorage.setItem(NEXT_KEY, cleanPath(rawPath)); } catch (_) {}
       }
       if (cleanPath(here) !== '/login') history.replaceState({ i: 0, prev: null }, '', '/login' + tail);
@@ -291,14 +316,31 @@ export async function applyPath(rawPath, { initial = false } = {}) {
       return;
     }
 
+    /* Kirgan: mavjud bo'lmagan manzil -> 404 sahifa */
+    if (route.kind === 'notfound') return notFound();
+
     /* Kirgan: /login va "/" -> saqlangan manzil yoki /home */
     if (route.kind === 'login' || route.kind === 'root') {
+      const fromLogin = _fromLogin;
+      _fromLogin = false;
       let next = null;
       try { next = sessionStorage.getItem(NEXT_KEY); sessionStorage.removeItem(NEXT_KEY); } catch (_) {}
       const nr = next ? parsePath(next) : null;
-      if (nr && nr.kind !== 'root' && nr.kind !== 'login') {
+      // Kirmagan paytda mavjud bo'lmagan manzilga borgan edi — kirgandan keyin ham 404
+      if (nr && nr.kind === 'notfound') return notFound();
+      if (nr && nr.kind !== 'root' && nr.kind !== 'login' && nr.kind !== 'notfound') {
         history.replaceState({ i: 0, prev: null }, '', cleanPath(next) + tail);
         return applyPath(next, { initial: true });
+      }
+      // Allaqachon kirgan odam /login ni yozdi: oxirgi turgan joyiga qaytaramiz
+      if (route.kind === 'login' && !fromLogin) {
+        let last = null;
+        try { last = localStorage.getItem(LAST_KEY); } catch (_) {}
+        const lr = last ? parsePath(last) : null;
+        if (lr && lr.kind !== 'root' && lr.kind !== 'login' && lr.kind !== 'notfound') {
+          history.replaceState({ i: 0, prev: null }, '', cleanPath(last) + tail);
+          return applyPath(last, { initial: true });
+        }
       }
       history.replaceState({ i: 0, prev: null }, '', '/home' + tail);
       if (getCurrentRoute() !== 'home' || threadOpen()) navigateTo('home', false);
@@ -308,7 +350,7 @@ export async function applyPath(rawPath, { initial = false } = {}) {
     }
 
     /* Huquq tekshiruvi */
-    if (route.admin && !isAdminUser()) return deny();
+    if (route.admin && !isAdminUser()) return notFound();
 
     /* Tab (view) */
     if (route.kind === 'view') {
@@ -337,7 +379,7 @@ export async function applyPath(rawPath, { initial = false } = {}) {
     /* Boshqa foydalanuvchi profili: /u/<username> */
     if (route.kind === 'userprofile') {
       const uid = await uidByUsername(route.ref);
-      if (!uid) return deny();
+      if (!uid) return missing();
       if (uid === state.me.uid) {
         history.replaceState({ i: 0, prev: null }, '', '/profile' + tail);
         if (getCurrentRoute() !== 'profile' || threadOpen() || hasAnyOverlay()) navigateTo('profile', false);
@@ -363,7 +405,7 @@ export async function applyPath(rawPath, { initial = false } = {}) {
       let ok = false;
       if (route.thread === 'dm') {
         const uid = await uidByUsername(route.ref);
-        if (!uid) return deny();
+        if (!uid) return missing();
         if (uid === state.me.uid) {
           // O'ziga chat yo'q — o'z profiliga o'tamiz (havola hamma uchun ochiladi)
           history.replaceState({ i: 0, prev: null }, '', '/profile' + tail);
@@ -379,7 +421,7 @@ export async function applyPath(rawPath, { initial = false } = {}) {
         ok = threadOpen();
       } else {
         const gid = await groupIdByRef(route.ref);
-        if (!gid) return deny();
+        if (!gid) return missing();
         if (!(await ensureGroupMember(gid))) return deny();
         if (getCurrentRoute() !== 'chats') navigateTo('chats', false);
         closeEverythingExcept(null);
@@ -397,6 +439,7 @@ export async function applyPath(rawPath, { initial = false } = {}) {
     }
   } finally {
     _applying = false;
+    _fromLogin = false;
     _suppressUntil = Date.now() + 150;
     schedule();
   }
@@ -412,6 +455,7 @@ function detectAuth() {
   const prev = _auth;
   _auth = next;
   if (next === 'in') {
+    _fromLogin = prev === 'out';
     // Kirish tugadi — joriy yo'l (yoki saqlangan manzil) ga ko'ra holatni o'rnatamiz
     applyPath(location.pathname, { initial: prev === 'unknown' });
   } else if (next === 'out') {
