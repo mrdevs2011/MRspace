@@ -1170,7 +1170,7 @@ export function openCreateForm(type) {
   pickerSection.innerHTML = '<div class="spin-wrap pt-20px"><div class="spinner"></div></div>';
 
   // Load users
-  _loadUsersForPicker().then(users => {
+  _loadContactsForPicker().then(users => {
     _usersForPicker = users;
     _renderMemberPicker(pickerSection, users);
   });
@@ -1189,9 +1189,22 @@ async function _loadUsersForPicker() {
   } catch(_) { return []; }
 }
 
+// Guruhga a'zo qo'shish: faqat mening kontaktlarim (contacts jadvali — suhbat ochilganda yoziladi)
+async function _loadContactsForPicker() {
+  try {
+    const [{ data, error }, users] = await Promise.all([
+      sb.from('contacts').select('contact_id').eq('owner_id', state.me.uid),
+      _loadUsersForPicker(),
+    ]);
+    if (error) throw error;
+    const ids = new Set((data || []).map(r => r.contact_id));
+    return users.filter(u => ids.has(u.uid));
+  } catch (_) { return []; }
+}
+
 function _renderMemberPicker(container, users) {
   if (!users.length) {
-    container.innerHTML = `<div class="grp-empty-users">Boshqa foydalanuvchilar yo'q</div>`;
+    container.innerHTML = `<div class="grp-empty-users">Kontaktlaringiz yo'q — avval foydalanuvchi bilan suhbat oching</div>`;
     return;
   }
   container.innerHTML = `
@@ -1317,7 +1330,7 @@ export async function openMemberPicker(groupId, mode) {
 
   const pickerSection = overlay.querySelector('#grpMemberPickerSection');
   pickerSection.innerHTML = '<div class="spin-wrap pt-20px"><div class="spinner"></div></div>';
-  const users = await _loadUsersForPicker();
+  const users = await _loadContactsForPicker();
   const nonMembers = users.filter(u => !existingMembers.has(u.uid));
   _usersForPicker = nonMembers;
   _renderMemberPicker(pickerSection, nonMembers);
