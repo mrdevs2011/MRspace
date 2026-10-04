@@ -192,6 +192,7 @@
   position: relative;
   border-radius: 16px;
   animation: postBlueGlow 5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: var(--hl-delay, 0s);
 }
 
 .post.post-link-highlight::after {
@@ -207,6 +208,7 @@
   pointer-events: none;
   z-index: 5;
   animation: postUnderglow 5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: var(--hl-delay, 0s);
 }
 
 @keyframes postBlueGlow {

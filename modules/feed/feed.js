@@ -356,6 +356,24 @@ export function getTargetPostId() {
 
 let _scrolledTargetId = null;
 
+/* ── Glow: lenta qayta chizilganda ham 5 soniya to'liq davom etadi ── */
+const HL_MS = 5000;
+let _hlId = null;
+let _hlStart = 0;
+
+function applyPostHighlight(el) {
+  const elapsed = Math.max(0, Date.now() - _hlStart);
+  el.style.setProperty('--hl-delay', `-${elapsed}ms`); // yangi element ham qolgan joyidan davom etadi
+  el.classList.add('post-link-highlight');
+}
+
+function reapplyPostHighlight() {
+  if (!_hlId) return;
+  if (Date.now() - _hlStart >= HL_MS) { _hlId = null; return; }
+  const el = document.querySelector(`.post[data-id="${_hlId}"]`);
+  if (el && !el.classList.contains('post-link-highlight')) applyPostHighlight(el);
+}
+
 /* ── Scroll to post by URL hash or query (faqat login qilgan userlar uchun) ── */
 export function scrollToPostFromHash() {
   if (!state.me?.uid) return;
@@ -369,16 +387,20 @@ export function scrollToPostFromHash() {
       _scrolledTargetId = targetId;
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       // 5 sekund tagidan rang yonib turib keyin o'chadi
-      el.classList.add('post-link-highlight');
+      _hlId = targetId;
+      _hlStart = Date.now();
+      applyPostHighlight(el);
       try {
         if (window.location.hash.startsWith('#post-')) {
           history.replaceState(null, '', window.location.pathname);
         }
       } catch (_) {}
       setTimeout(() => {
-        el.classList.remove('post-link-highlight');
+        // Element lenta qayta chizilganda almashgan bo'lishi mumkin — hozirgisini tozalaymiz
+        document.querySelectorAll('.post.post-link-highlight').forEach(x => x.classList.remove('post-link-highlight'));
+        _hlId = null;
         sessionStorage.removeItem('target_post_id');
-      }, 5000);
+      }, HL_MS);
       return;
     }
 
@@ -578,6 +600,7 @@ export async function renderFeed() {
   _feedFirstRender = false;
 
   await renderFeedTo(feedEl, posts);
+  reapplyPostHighlight();
 
 
   // URL hash yoki query da post id bo'lsa — o'sha postga smooth scroll va ko'k yonish
