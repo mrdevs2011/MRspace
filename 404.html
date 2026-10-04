@@ -2,210 +2,162 @@
 <html lang="uz">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
+<meta name="robots" content="noindex">
 <title>404 · SpaceMR</title>
-
-<!-- Theme: localStorage dan o'qiladi, toggle yo'q -->
-<script>
-  (function(){
-    var t = localStorage.getItem('spacemr_theme') ||
-            localStorage.getItem('mrspace_theme') ||
-            (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-    document.documentElement.setAttribute('data-theme', t);
-  })();
-</script>
-
 <link rel="icon" type="image/png" href="/svg/favicon.png">
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-
 <style>
-/* ── Reset ── */
-*, *::before, *::after {
-  margin: 0; padding: 0;
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg: #000;
+  --text: #e7e9ea;
+  --muted: #71767b;
+  --line: #2f3336;
+  --blue: #1d9bf0;
 }
 
-/* ── Theme tokens — loyiha bilan bir xil ── */
-[data-theme="dark"] {
-  --bg:         #000000;
-  --bg2:        #0d0d0d;
-  --line:       rgba(255,255,255,0.08);
-  --line2:      rgba(255,255,255,0.14);
-  --text:       #f0f0f0;
-  --text2:      #666666;
-  --text3:      #2a2a2a;
-  --blue:       #5b8ef5;
-  --blue2:      #7ba5ff;
-  --blue-glow:  rgba(91,142,245,0.18);
-  --blue-glow2: rgba(91,142,245,0.10);
-  --glass-mid:        rgba(255,255,255,0.08);
-  --glass-heavy:      rgba(255,255,255,0.12);
-  --glass-border:     rgba(255,255,255,0.14);
-  --glass-border-top: rgba(255,255,255,0.22);
-  --glass-blur:       saturate(200%) blur(40px);
-  --specular-top:     inset 0 1px 0 rgba(255,255,255,0.20);
-  --specular-edge:    inset 0 0 0 0.5px rgba(255,255,255,0.12);
-  --liquid-shadow-lg: 0 16px 60px rgba(0,0,0,0.45), 0 4px 16px rgba(0,0,0,0.30);
-}
-[data-theme="dark"] body {
-  background-color: rgba(91,142,245,0.07);
-}
-
-[data-theme="light"] {
-  --bg:         #ffffff;
-  --bg2:        #f5f5f5;
-  --line:       rgba(0,0,0,0.08);
-  --line2:      rgba(0,0,0,0.14);
-  --text:       #111111;
-  --text2:      #666666;
-  --text3:      #dddddd;
-  --blue:       #4070e8;
-  --blue2:      #6090ff;
-  --blue-glow:  rgba(64,112,232,0.18);
-  --blue-glow2: rgba(64,112,232,0.10);
-  --glass-mid:        rgba(255,255,255,0.55);
-  --glass-heavy:      rgba(255,255,255,0.70);
-  --glass-border:     rgba(0,0,0,0.08);
-  --glass-border-top: rgba(255,255,255,0.65);
-  --glass-blur:       saturate(180%) blur(40px);
-  --specular-top:     inset 0 1px 0 rgba(255,255,255,0.60);
-  --specular-edge:    inset 0 0 0 0.5px rgba(255,255,255,0.40);
-  --liquid-shadow-lg: 0 16px 50px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06);
-}
-[data-theme="light"] body {
-  background-color: rgba(64,112,232,0.08);
-}
-
-/* ── Base ── */
-html { background: var(--bg); height: 100%; }
+html, body { height: 100%; background: var(--bg); }
 
 body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  min-height: 100dvh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
   text-align: center;
-}
-
-/* ── Wrap ── */
-.wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* ── Glass card ── */
-.err-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 48px 44px 40px;
-  border-radius: 32px;
   overflow: hidden;
-  background: var(--glass-mid);
-  border: 0.5px solid var(--glass-border-top);
-  box-shadow: var(--specular-top), var(--specular-edge), var(--liquid-shadow-lg);
+  position: relative;
 }
 
-/* glass sheen sweep */
-.err-card::after {
-  content: '';
-  position: absolute;
-  top: -60%; left: -160%;
-  width: 70%; height: 220%;
-  background: rgba(255,255,255,0.30);
-  transform: rotate(22deg);
-  pointer-events: none;
-}
-
-
-/* top-left specular glow inside the glass */
-.err-card::before {
-  content: '';
+/* Yulduzlar — juda mayin, faqat fon */
+body::before {
+  content: "";
   position: absolute;
   inset: 0;
-  background: rgba(255,255,255,0.16);
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,.55), transparent),
+    radial-gradient(1px 1px at 78% 14%, rgba(255,255,255,.4), transparent),
+    radial-gradient(1.5px 1.5px at 88% 68%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 22% 78%, rgba(255,255,255,.35), transparent),
+    radial-gradient(1px 1px at 55% 88%, rgba(255,255,255,.45), transparent),
+    radial-gradient(1px 1px at 40% 10%, rgba(255,255,255,.3), transparent),
+    radial-gradient(1.5px 1.5px at 6% 58%, rgba(255,255,255,.4), transparent),
+    radial-gradient(1px 1px at 94% 38%, rgba(255,255,255,.3), transparent);
   pointer-events: none;
 }
 
-/* ── 404 raqam ── */
-.err-code {
+main {
   position: relative;
   z-index: 1;
-  font-size: clamp(96px, 18vw, 180px);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -6px;
-  color: var(--blue);
-  font-variant-numeric: tabular-nums;
-  user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 360px;
+}
+
+/* 404 + aylanuvchi nuqta (orbita) */
+.code {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 220px;
+  height: 220px;
+  margin-bottom: 8px;
+}
+.code::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+.orbit {
+  position: absolute;
+  inset: 0;
+  animation: spin 14s linear infinite;
+}
+.orbit::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: calc(50% - 4px);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   background: var(--blue);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 40px var(--blue-glow));
+  box-shadow: 0 0 14px 2px rgba(29, 155, 240, .6);
 }
-
-/* ── Matn ── */
-.err-desc {
-  position: relative;
-  z-index: 1;
-  font-size: 13.5px;
-  color: var(--text2);
-  line-height: 1.65;
-  max-width: 260px;
-  margin-top: 14px;
-}
-
-/* ── Brand (pastki) ── */
-.err-brand {
-  position: fixed;
-  bottom: 22px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 11px;
-  font-family: 'DM Mono', monospace;
-  color: var(--text2);
-  opacity: 0.45;
-  letter-spacing: 0.07em;
-  white-space: nowrap;
-  pointer-events: none;
+.num {
+  font-size: 64px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  line-height: 1;
+  color: var(--text);
   user-select: none;
-  text-transform: uppercase;
 }
 
-/* ── Animation ── */
+h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 12px;
+}
+p {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 28px;
+  height: 44px;
+  padding: 0 28px;
+  border-radius: 999px;
+  background: var(--text);
+  color: #0f1419;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity .15s ease, transform .15s ease;
+}
+.btn:hover { opacity: .88; }
+.btn:active { transform: scale(.97); }
+.btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+
+.brand {
+  position: absolute;
+  bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  left: 0; right: 0;
+  z-index: 1;
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: .6;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .orbit { animation: none; } }
 </style>
 </head>
 <body>
-
-<div class="wrap">
-
-  <div class="err-card">
-    <!-- 404 raqam -->
-    <div class="err-code">404</div>
-
-    <!-- Matn -->
-    <p class="err-desc">Siz izlagan sahifa mavjud emas yoki boshqa manzilga ko'chirilgan.</p>
-  </div>
-
-</div>
-
-<!-- Brand -->
-<div class="err-brand">private database · spacemr</div>
-
+  <main>
+    <div class="code" aria-hidden="true">
+      <div class="orbit"></div>
+      <div class="num">404</div>
+    </div>
+    <h1>Sahifa topilmadi</h1>
+    <p>Bu manzil mavjud emas yoki boshqa joyga ko'chirilgan.</p>
+    <a class="btn" href="/">Bosh sahifaga qaytish</a>
+  </main>
+  <div class="brand">SpaceMR</div>
 </body>
 </html>

@@ -1452,7 +1452,12 @@ export function injectGroupsDOM() {
     <div class="overlay" id="grpCreateFormOverlay">
       <div class="sheet">
         <div class="sheet-handle"></div>
-        <div class="grp-form-title sheet-title">Yangi guruh</div>
+        <div class="grp-form-head">
+          <button type="button" class="grp-form-back" id="grpFormCancelBtn" aria-label="Orqaga" title="Orqaga">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="grp-form-title sheet-title">Yangi guruh</div>
+        </div>
 
         <!-- Avatar picker -->
         <div class="grp-form-avi-wrap" id="grpFormAviWrap">
@@ -1518,7 +1523,6 @@ export function injectGroupsDOM() {
         <div id="grpMemberPickerSection"></div>
 
         <div class="grp-form-actions">
-          <button class="btn-ghost" id="grpFormCancelBtn">Bekor qilish</button>
           <button class="btn-primary" id="grpFormCreateBtn">Yaratish</button>
         </div>
       </div>
