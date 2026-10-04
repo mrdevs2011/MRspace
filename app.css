@@ -1140,7 +1140,7 @@
   }
   .nav-btn[data-v]:hover::after, .nav-center-btn:hover::after, .sb-mute-btn:hover::after { opacity: 1; }
   .nav-center-btn::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50%; background: var(--pal-legacy-3a3a3f); border-radius: 50% 50% 0 0; pointer-events: none; }
-  #homeView, #followingView, #reelsView, #profileView, #chatsView, #actionsView { margin-left: var(--sidebar); position: relative; z-index: 1; }
+  #homeView, #followingView, #reelsView, #profileView, #chatsView, #actionsView, #savedView { margin-left: var(--sidebar); position: relative; z-index: 1; }
   .view.on { padding-top: 16px; padding-bottom: 24px; }
   .feed { margin: 0 auto; padding: 0 16px; }
   .post { border: 0.5px solid var(--glass-border); background: var(--glass); margin-bottom: 16px; padding: 14px; box-shadow: var(--specular-top), var(--liquid-shadow-sm); }
@@ -4795,7 +4795,7 @@ a { color: var(--link); }
 /* Desktop/planshet: markaz ustun */
 @media (min-width: 1100px) {
   :root { --center-w: 600px; }
-  #homeView.on, #followingView.on { padding-top: 0; padding-bottom: 0; }
+  #homeView.on, #followingView.on, #savedView.on { padding-top: 0; padding-bottom: 0; }
   .feed, #followingView .feed { max-width: var(--center-w); padding: 0; min-height: 100dvh; }
 }
 /* Keng ekran (≥1260px): sidebar + markaz + o'ng ustun, butun guruh markazda */
@@ -4807,7 +4807,7 @@ a { color: var(--link); }
 /* O'ng ustun tarkibi */
 /* ═══════════════════════════════════════════════════════════════════════ Header YO'Q (mobil ham) + Post: X u... */
 .app-hdr, .app-hdr.search-open { display: none; }
-#homeView.on, #followingView.on { padding-top: 0; padding-bottom: 0; }
+#homeView.on, #followingView.on, #savedView.on { padding-top: 0; padding-bottom: 0; }
 .post, [data-theme] .post {
   --post-px: 16px;
   --post-avi: 40px;
@@ -5337,7 +5337,7 @@ html, body, #app, .app { background: var(--pal-black); background-color: var(--p
 .right-rail { display: none; }
 @media (min-width: 1200px) {
   :root { --center-w: 600px; }
-  #homeView.on, #followingView.on, #profileView.on { margin-left: var(--content-left, var(--sidebar, 260px)); margin-right: 0; width: var(--center-w); max-width: var(--center-w); box-sizing: border-box; }
+  #homeView.on, #followingView.on, #profileView.on, #savedView.on { margin-left: var(--content-left, var(--sidebar, 260px)); margin-right: 0; width: var(--center-w); max-width: var(--center-w); box-sizing: border-box; }
   .feed, #followingView .feed { max-width: var(--center-w); width: 100%; margin: 0; }
   [data-theme] .search-overlay, [data-theme="dark"] .search-overlay, .search-overlay {
     left: var(--content-left, var(--sidebar, 260px));
@@ -8161,4 +8161,45 @@ textarea:not(:focus) {
    Sidebar kengligi = 260 + gutter; ichidagi tugmalar gutter'dan keyin boshlansin (chapga yopishmasin). */
 @media (min-width: 1260px) {
   nav.bot-nav { padding-left: calc(12px + var(--gutter, 0px)) !important; }
+}
+
+/* Mobil / planshet (<1100px): bosh sahifada stories tepasida logo + "SpaceMR" (Instagram kabi). Desktop'da sidebar'da bor. */
+.home-brand { display: none; }
+@media (max-width: 1099px) {
+  #homeView .home-brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px 2px;
+    background: var(--bg);
+  }
+  #homeView .home-brand img { width: 28px; height: 28px; border-radius: 0; object-fit: contain; }
+  #homeView .home-brand span { font-size: 21px; font-weight: 800; letter-spacing: -0.4px; color: var(--pal-white, #fff); line-height: 1; }
+}
+
+/* ── Saqlash (bookmark) tugmasi + Saqlanganlar sahifasi ── */
+.act-btn.save-btn.saved, .act-btn.save-btn.saved svg { color: var(--pal-white, #fff); }
+.home-brand-saved {
+  margin-left: auto; width: 40px; height: 40px; padding: 0; border: none; background: none;
+  display: flex; align-items: center; justify-content: center; border-radius: 50%;
+  color: var(--pal-white, #fff); cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.home-brand-saved svg { width: 24px; height: 24px; }
+.home-brand-saved:active { background: var(--hover-strong, rgba(255,255,255,.08)); }
+/* Mobil/planshet: pastki navda "Saqlanganlar" ko'rinmaydi (u yuqori o'ng tugma orqali). Desktop: chap sidebar'da. */
+@media (max-width: 1099px) { nav.bot-nav .nav-btn[data-v="saved"] { display: none !important; } }
+.saved-head {
+  display: flex; align-items: center; gap: 8px; box-sizing: border-box;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 12px 10px;
+  border-bottom: 1px solid var(--line); background: var(--bg);
+  position: sticky; top: 0; z-index: 5;
+}
+.saved-back {
+  width: 36px; height: 36px; padding: 0; border: none; background: none; color: var(--text);
+  display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer;
+}
+.saved-back:hover { background: var(--hover-strong, rgba(255,255,255,.08)); }
+.saved-title { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.3px; color: var(--pal-white, #fff); }
+.saved-empty { padding: 64px 24px; text-align: center; }
+@media (min-width: 1100px) {
+  .saved-back { display: none; }
+  .saved-head { padding: 16px 16px 12px; }
 }

@@ -13,6 +13,7 @@
  *   /explore               qidiruv (Explore)
  *   /newpost               yangi post oynasi
  *   /actions               admin boshqaruvi (faqat admin)
+ *   /saved                 saqlangan postlar
  *
  * Qoidalar:
  *  - Kirmagan foydalanuvchi har qanday manzilda DARHOL /login ga qaytariladi (index.html dagi
@@ -30,7 +31,7 @@ import { navigateTo, getCurrentRoute } from './router.js';
 
 const $ = id => document.getElementById(id);
 
-const VIEW_PATH = { home: '/home', chats: '/chats', profile: '/profile', actions: '/actions' };
+const VIEW_PATH = { home: '/home', chats: '/chats', profile: '/profile', actions: '/actions', saved: '/saved' };
 const NEXT_KEY = 'spacemr_next_path';
 const LAST_KEY = 'spacemr_last_path'; // kirgan foydalanuvchining oxirgi joyi (/login yozsa shu yerga qaytadi)
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -69,6 +70,7 @@ export function parsePath(rawPath) {
     if (a === 'chats')    return { kind: 'view', view: 'chats' };
     if (a === 'profile')  return { kind: 'view', view: 'profile' };
     if (a === 'actions')  return { kind: 'view', view: 'actions', admin: true };
+    if (a === 'saved')    return { kind: 'view', view: 'saved' };
     if (a === 'settings') return { kind: 'overlay', overlay: 'settings', base: 'profile' };
     if (a === 'explore')  return { kind: 'overlay', overlay: 'explore', base: 'home' };
     if (a === 'newpost')  return { kind: 'overlay', overlay: 'newpost', base: 'home' };
@@ -210,6 +212,7 @@ function schedule() {
 
 function sync() {
   if (_applying) return;
+  if (nfShown()) return; // 404 ko'rinib turibdi — URL tegilmaydi
   const wait = _suppressUntil - Date.now();
   if (wait > 0) {
     clearTimeout(_timer);
@@ -229,7 +232,7 @@ function sync() {
 
 const TITLES = {
   '/login': 'Kirish', '/home': 'Bosh sahifa', '/chats': 'Suhbatlar', '/profile': 'Profil',
-  '/settings': 'Sozlamalar', '/explore': 'Kashf', '/newpost': 'Yangi post', '/actions': 'Boshqaruv',
+  '/settings': 'Sozlamalar', '/explore': 'Kashf', '/newpost': 'Yangi post', '/actions': 'Boshqaruv', '/saved': 'Saqlanganlar',
   '/chats/groupcreate': 'Yangi guruh',
 };
 function updateTitle(path) {
@@ -263,9 +266,11 @@ async function closeThreadIfOpen() {
   }
 }
 
-/** Mavjud bo'lmagan manzil: soddalashtirilgan 404 sahifaga o'tamiz (tarixga yozilmaydi). */
+/** Mavjud bo'lmagan manzil: 404 shu joyning o'zida ko'rsatiladi (URL o'zgarmaydi, /404.html ochilmaydi). */
+const nfShown = () => document.documentElement.hasAttribute('data-nf');
 function notFound() {
-  try { location.replace('/404.html'); } catch (_) { location.href = '/404.html'; }
+  document.documentElement.setAttribute('data-nf', '1');
+  document.title = '404 - SpaceMR';
 }
 
 function deny() {
@@ -299,6 +304,7 @@ async function openOverlay(name) {
 
 /** URL ga qarab ilova holatini o'rnatadi. */
 export async function applyPath(rawPath, { initial = false } = {}) {
+  document.documentElement.removeAttribute('data-nf');
   _applying = true;
   _suppressUntil = Date.now() + 900;
   try {

@@ -33,11 +33,15 @@ const routes = {
   'actions': {
     view: 'actionsView',
     title: 'Boshqaruv'
+  },
+  'saved': {
+    view: 'savedView',
+    title: 'Saqlanganlar'
   }
 };
 
 // Allowed route names for security
-const ALLOWED_ROUTES = ['home', 'profile', 'chats', 'login', 'actions'];
+const ALLOWED_ROUTES = ['home', 'profile', 'chats', 'login', 'actions', 'saved'];
 
 /* ═══════════════════════════════════════════════════════════════════════
    CURRENT STATE
@@ -121,7 +125,7 @@ export function navigateTo(routeName, pushState = true) {
   state.view = routeName;
 
   // Update document title
-  document.title = `${route.title} - SpaceMR`;
+  if (!document.documentElement.hasAttribute('data-nf')) document.title = `${route.title} - SpaceMR`;
 
   // Update nav UI
   updateNavUI(routeName);

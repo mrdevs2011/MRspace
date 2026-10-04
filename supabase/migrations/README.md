@@ -28,3 +28,4 @@ Bazada ISHGA TUSHIRILGAN SQL fayllar, tartib raqami bilan. Yangi bazada `000_sch
 - 055 (2026-10-03): 054 tuzatildi — ovozli xabar (audio, faqat chat-voice papkasi va type='voice') qaytarildi; video taqiqligicha. Bucket MIME ro'yxati olib tashlandi (codecs parametri sababli), cheklov triggerlarda.
 - 056 (2026-10-03): siyosat o'zgardi (054/055 ni almashtiradi): faqat VIDEO taqiqlangan; rasm formatlari, hujjat/arxiv, audio ruxsat; story/avatar/guruh avatari faqat rasm.
 - 057 (2026-10-03): chat/guruhga FAYL sifatida (chat-files, group-files, type='file') video (mp4...) ruxsat; post/story/avatar uchun video taqiqligicha.
+- 058 (2026-10-04): `saved_posts` jadvali (user_id, post_id, created_at) — saqlangan postlar. RLS: faqat o'ziniki (select/insert/delete), insert uchun is_approved() va post_is_visible(). Bazada yurgizilgan.

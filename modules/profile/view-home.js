@@ -6,6 +6,7 @@
 import { state } from '../core/config.js';
 import { renderFeed, setupPullToRefresh, setupFeedScrollSensitivity } from '../feed/feed.js';
 import { initStories, loadStories } from '../feed/stories.js';
+import { navigateTo } from '../router.js';
 
 let _homeReady = false;
 
@@ -15,6 +16,7 @@ export function initView() {
   if (!_homeReady) {
     setupPullToRefresh();
     setupFeedScrollSensitivity();
+    document.getElementById('hdrSavedBtn')?.addEventListener('click', () => navigateTo('saved'));
     _homeReady = true;
   }
 

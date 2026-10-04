@@ -211,12 +211,15 @@ export async function renderFeedTo(feedEl, posts) {
   // Post objectidagi ma'lumotni ishlatamiz (har render'da Firestore o'qish o'rniga — RAM dan)
   posts.forEach(p => { cMap[p.id] = p.commentCount ?? 0; });
 
+  await ensureSavedLoaded();
+
   let html = '';
   for (const p of posts) {
     const u        = uMap[p.userId] || {};
     const liked    = likedSet.has(p.id);
     const canDel   = state.me.uid === p.userId || isAdmin();
     const isMine   = state.me.uid === p.userId;
+    const saved    = state.mySavedPosts.has(p.id);
 
     html += `<div class="post" data-id="${p.id}">
       <div class="post-head">
@@ -264,6 +267,9 @@ export async function renderFeedTo(feedEl, posts) {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M8 7C5.23858 7 3 9.23858 3 12C3 14.7614 5.23858 17 8 17H10C10.5523 17 11 17.4477 11 18C11 18.5523 10.5523 19 10 19H8C4.13401 19 1 15.866 1 12C1 8.13401 4.13401 5 8 5H10C10.5523 5 11 5.44772 11 6C11 6.55228 10.5523 7 10 7H8ZM13 6C13 5.44772 13.4477 5 14 5H16C19.866 5 23 8.13401 23 12C23 15.866 19.866 19 16 19H14C13.4477 19 13 18.5523 13 18C13 17.4477 13.4477 17 14 17H16C18.7614 17 21 14.7614 21 12C21 9.23858 18.7614 7 16 7H14C13.4477 7 13 6.55228 13 6ZM7 12C7 11.4477 7.44772 11 8 11H16C16.5523 11 17 11.4477 17 12C17 12.5523 16.5523 13 16 13H8C7.44772 13 7 12.5523 7 12Z"/>
             </svg>
+          </button>
+          <button class="act-btn save-btn${saved?' saved':''}" data-id="${p.id}" title="${saved?'Saqlanganlardan olib tashlash':'Saqlash'}" aria-label="Saqlash" aria-pressed="${saved?'true':'false'}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="${saved?'currentColor':'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
           </button>
         </div>
       </div>
@@ -427,6 +433,8 @@ export function scrollToPostFromHash() {
 function bindFeedEvents(feedEl) {
   feedEl.querySelectorAll('.like-btn').forEach(b => b.addEventListener('click', () => doLike(b.dataset.id, b)));
 
+  feedEl.querySelectorAll('.save-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); doSave(b.dataset.id); }));
+
   feedEl.querySelectorAll('.cmt-open-btn').forEach(b => b.addEventListener('click', async () => {
     const { openCmtModal } = await import('./comments.js');
     openCmtModal(b.dataset.id);
@@ -474,6 +482,68 @@ function bindFeedEvents(feedEl) {
   });
 }
 
+/* ── Saqlash (bookmark): saved_posts jadvali ─────────────────────────── */
+let _savedLoad = null;
+/** Mening saqlangan post id'larim (bir marta yuklanadi, foydalanuvchi almashsa qayta). */
+export function ensureSavedLoaded() {
+  const uid = state.me?.uid;
+  if (!uid) return Promise.resolve();
+  if (state._savedFor === uid && _savedLoad) return _savedLoad;
+  state._savedFor = uid;
+  state.mySavedPosts = new Set();
+  _savedLoad = (async () => {
+    try {
+      const { data, error } = await sb.from('saved_posts').select('post_id')
+        .eq('user_id', uid).order('created_at', { ascending: false }).limit(1000);
+      if (error) throw error;
+      state.mySavedPosts = new Set((data || []).map(r => r.post_id));
+    } catch (e) {
+      console.warn('[feed] saved yuklanmadi:', e?.message || e);
+      _savedLoad = null; state._savedFor = null;
+    }
+  })();
+  return _savedLoad;
+}
+
+function paintSaveBtn(btn, on) {
+  btn.classList.toggle('saved', on);
+  btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  btn.title = on ? 'Saqlanganlardan olib tashlash' : 'Saqlash';
+  btn.querySelector('svg')?.setAttribute('fill', on ? 'currentColor' : 'none');
+}
+
+const _saveLocks = new Set();
+export async function doSave(postId) {
+  if (!state.me || _saveLocks.has(postId)) return;
+  _saveLocks.add(postId);
+  const wasSaved = state.mySavedPosts.has(postId);
+  const sync = on => document.querySelectorAll(`.save-btn[data-id="${postId}"]`).forEach(b => paintSaveBtn(b, on));
+
+  if (wasSaved) state.mySavedPosts.delete(postId); else state.mySavedPosts.add(postId);
+  sync(!wasSaved);
+  if (wasSaved) {
+    const post = document.querySelector(`#savedFeed .post[data-id="${postId}"]`);
+    if (post) { post.remove(); window.dispatchEvent(new Event('spacemr:saved-changed')); }
+  }
+
+  try {
+    if (wasSaved) {
+      const { error } = await sb.from('saved_posts').delete().eq('post_id', postId).eq('user_id', state.me.uid);
+      if (error) throw error;
+    } else {
+      const { error } = await sb.from('saved_posts').insert({ post_id: postId, user_id: state.me.uid });
+      if (error && error.code !== '23505') throw error; // 23505 = allaqachon saqlangan
+    }
+  } catch (err) {
+    console.warn('[Feed] Saqlash bajarilmadi:', err?.message);
+    if (wasSaved) state.mySavedPosts.add(postId); else state.mySavedPosts.delete(postId);
+    sync(wasSaved);
+    toast("Saqlab bo'lmadi", 'error');
+  } finally {
+    _saveLocks.delete(postId);
+  }
+}
+
 /* ── Like ────────────────────────────────────────────────────────────── */
 const _likeLocks = new Set();
 export async function doLike(postId, btn) {
@@ -483,9 +553,9 @@ export async function doLike(postId, btn) {
   
   const wasLiked = state.myLikedPosts.has(postId);
   const post     = state.allPosts.find(p => p.id === postId);
-  const cur      = post?.likes || 0;
   const svg      = btn.querySelector('svg');
   const lc       = document.getElementById(`lc-${postId}`);
+  const cur      = post?.likes ?? (parseInt(lc?.textContent, 10) || 0); // Saqlanganlar kabi allPosts'da yo'q postlar uchun DOM'dan
 
   if (wasLiked) {
     state.myLikedPosts.delete(postId);
