@@ -26,7 +26,12 @@ if (view && wrap) {
   view.appendChild(pane);
 
   /* "Yangi chat" — username bo'yicha qidiruv maydoniga o'tadi */
-  $('chatsXNew')?.addEventListener('click', () => $('chatSearchInput')?.focus());
+  $('chatsXNew')?.addEventListener('click', () => {
+    /* "Yangi guruh" formasi ochiq bo'lsa — avval yopamiz (URL ham /chats ga qaytadi) */
+    const gc = $('grpCreateFormOverlay');
+    if (gc?.classList.contains('show') && !gc.dataset.addMode) $('grpFormCancelBtn')?.click();
+    $('chatSearchInput')?.focus();
+  });
 
   /* ── Chap panel: ro'yxat bo'sh bo'lsa ────────────────────────────── */
   const empty = document.createElement('div');
